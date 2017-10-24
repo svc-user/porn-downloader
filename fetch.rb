@@ -69,6 +69,12 @@ class Downloader
 		SUBS.each do |sub|  
 			uri = build_uri sub, TIMESPANS[2], TOP_COUNT
 			api_resp = Net::HTTP.get(uri)
+
+			if api_resp.empty?
+				puts "Failed to get any links from #{uri}"
+				next
+			end
+
 			json = JSON.parse(api_resp)
 			posts = json['data']['children']
 			posts.each do |post| 
@@ -99,7 +105,7 @@ class Downloader
 	end
 
 	def build_uri sub, time, limit
-		return URI("http://www.reddit.com/r/#{sub}/top/.json?sort=top&t=#{time}&limit=#{limit}")
+		return URI("https://www.reddit.com/r/#{sub}/top/.json?sort=top&t=#{time}&limit=#{limit}")
 	end
 
 	def download_image url, save_path, sub
