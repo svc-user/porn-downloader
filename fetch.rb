@@ -59,16 +59,18 @@ class Downloader
 				"ApocalypsePorn",
 				"InfraredPorn",
 				"HellscapePorn" ]
-				
-	#SUBS = [ "FoodPorn" ]
+
+	# SUBS = [ "FoodPorn" ]
 	TIMESPANS = ['hour', 'day', 'week', 'month', 'year', 'all']
 
 	def run
 		puts "Getting max #{SUBS.length * TOP_COUNT} images."
 		sleep 1
-		SUBS.each do |sub|  
+		SUBS.each do |sub|
 			uri = build_uri sub, TIMESPANS[2], TOP_COUNT
-			api_resp = Net::HTTP.get(uri)
+			http = Net::HTTP.new(uri.host, uri.port)
+			http.use_ssl = true;
+			api_resp = http.get(uri.request_uri).body
 
 			if api_resp.empty?
 				puts "Failed to get any links from #{uri}"
@@ -77,7 +79,7 @@ class Downloader
 
 			json = JSON.parse(api_resp)
 			posts = json['data']['children']
-			posts.each do |post| 
+			posts.each do |post|
 				download_image post['data']['url'], DOWNLOAD_PATH + sub + '\\', sub
 			end
 		end
@@ -91,7 +93,7 @@ class Downloader
 			begin
 				diemensions = FastImage.size(file)
 				next if diemensions.nil?
-				
+
 				ratio = (diemensions[0].to_f / diemensions[1].to_f).round(2).to_s.ljust(4, '0')
 				FileUtils.mkpath RATIO_PATH + ratio unless File.exists? RATIO_PATH + ratio
 
@@ -105,16 +107,16 @@ class Downloader
 	end
 
 	def build_uri sub, time, limit
-		return URI("https://www.reddit.com/r/#{sub}/top/.json?sort=top&t=#{time}&limit=#{limit}")
+		return URI.parse("https://www.reddit.com/r/#{sub}/top/.json?sort=top&t=#{time}&limit=#{limit}")
 	end
 
 	def download_image url, save_path, sub
 		final_url = ""
-		if url.end_with? ".jpg" or 
-			url.end_with? ".jpeg" or 
+		if url.end_with? ".jpg" or
+			url.end_with? ".jpeg" or
 			url.end_with? ".png" or
 			url =~ /^https:\/\/drscdn.500px.org\/photo\/[0-9]+\/[a-z%0-9]+\/[a-z0-9]+$/i
-			final_url = url 
+			final_url = url
 		elsif url =~ /^http:\/\/imgur.com\/[a-z0-9]+$/i #http://imgur.com/OYLCtkH
 			img_code = url.split('/')[-1]
 			final_url = "http://i.imgur.com/#{img_code}.jpg"
@@ -161,7 +163,7 @@ class Downloader
 					warn "ENOENT"
 					#I wonder if this'll go :3
 				rescue e
-					warn e.inspect 
+					warn e.inspect
 					#I don't even care anymore :(
 			end
 		end
@@ -196,7 +198,7 @@ class Downloader
 					puts "Fetch failed"
 					return ""
 			end
-		end	  
+		end
 	end
 end
 
